@@ -55,8 +55,10 @@ function tick(t) {
 // Cube
 //----------------------------------------------------------------------
 
-// CUBE VERTICES are just binary digits,
-// so we represent a vertex as a single index.
+// CUBE VERTICES represented as binary digits allows us to generalize cubes
+// across dimensions, simply by adding a digit for each dimension.
+//
+// With this in mind, we represent a vertex as a single index.
 //
 // Index     Binary    Vertex (centered)
 //  0         000       [-1,-1,-1]
@@ -88,12 +90,9 @@ function numVerts(numDims) {
   const d = numDims || state.numDims;
   return Math.pow(2,d);
 }
-
-// Number of rotation planes (see rotate() for details)
-function numRots(numDims) {
-  const d = numDims || state.numDims;
-  return d * (d-1) / 2;
-}
+console.assert(numVerts(2) === 4);
+console.assert(numVerts(3) === 8);
+console.assert(numVerts(4) === 16);
 
 
 function vert(i) {
@@ -180,6 +179,15 @@ function translate(v) {
 // *     *  xw (4d)
 //   *   *  yw (4d)
 //     * *  zw (4d)
+
+// Number of rotation planes
+function numRots(numDims) {
+  const d = numDims || state.numDims;
+  return d * (d-1) / 2;
+}
+console.assert(numRots(2) === 1);
+console.assert(numRots(3) === 3);
+console.assert(numRots(4) === 6);
 
 function rotate([x,y,z,w]) {
   const v = [x,y,z,w];
