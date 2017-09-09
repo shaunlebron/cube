@@ -124,8 +124,10 @@ function* edges() {
 // Camera Projection
 //----------------------------------------------------------------------
 
-const camDistZ = 5;
-const camDistW = 5;
+const camDistZ = 2;
+const camDistW = 2;
+const cubeDistZ = camDistZ*2.5;
+const cubeDistW = camDistW*2.5;
 
 // 4d to 3d projection
 function toSpace([x,y,z,w]) {
@@ -164,8 +166,8 @@ function setupCamera() {
 // Shift object away from camera for projection.
 function translate(v) {
   let [x,y,z,w] = v;
-  z += camDistZ * 2;
-  w += camDistW * 2;
+  z += cubeDistZ;
+  w += cubeDistW;
   return [x,y,z,w];
 }
 
@@ -216,12 +218,52 @@ function transform(v) {
 // Draw
 //----------------------------------------------------------------------
 
+function mapRange(value, oldmin, oldmax, newmin, newmax) {
+  const oldrange = oldmax - oldmin;
+  const newrange = newmax - newmin;
+  return newmin + (value-oldmin)/oldrange*newrange;
+}
+
+let zRange = {
+  2: {},
+  3: {},
+  4: {},
+};
+function updateZRange(z) {
+  const d = state.numDims;
+  const {min, max}  = zRange[d];
+  zRange[d].min = min == null ? z : Math.min(min,z);
+  zRange[d].max = max == null ? z : Math.max(max,z);
+}
+function zDepth(z) {
+  updateZRange(z);
+  const {min, max}  = zRange[state.numDims];
+  const opacity = mapRange(z, max, min, 0.1, 0.7);
+  const thickness = mapRange(z, max, min, 2, 3);
+  return {opacity, thickness};
+}
+
 function line4d(a,b) {
   line3d(toSpace(a), toSpace(b));
 }
 
 function line3d(a,b) {
-  line2d(toPlane(a), toPlane(b));
+  const count = 10;
+  const interp = (i) => [
+    a[0]+(b[0]-a[0])/count*i,
+    a[1]+(b[1]-a[1])/count*i,
+    a[2]+(b[2]-a[2])/count*i
+  ];
+  for (let i=0; i<count; i++) {
+    const c = interp(i);
+    const d = interp(i+1);
+    const {opacity, thickness} = zDepth(c[2]);
+    ctx.beginPath();
+    line2d(toPlane(c), toPlane(d), (c[2]));
+    ctx.strokeStyle = `rgba(0,0,0,${opacity})`;
+    ctx.lineWidth = thickness;
+    ctx.stroke();
+  }
 }
 
 function line2d(a,b) {
@@ -235,9 +277,7 @@ function line(a,b) {
 
 function drawCube() {
   for (let [i,j] of edges()) {
-    ctx.beginPath();
     line4d(transform(vert(i)), transform(vert(j)));
-    ctx.stroke();
   }
 }
 
