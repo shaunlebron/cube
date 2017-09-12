@@ -120,6 +120,81 @@ function* edges() {
   }
 }
 
+function* faces() {
+  for (let i=0; i<numVerts(); i++) {
+    for (let a=0; a<state.numDims; a++) {
+      const j = i ^ (1<<a); // toggle bit a
+      for (let b=a+1; b<state.numDims; b++) {
+        const k = i ^ (1<<b); // toggle bit b
+        const l = i ^ (1<<a) ^ (1<<b); // toggle bits a and b
+        if (i < j && j < k && k < l) {
+          yield [i,j,l,k];
+        }
+      }
+    }
+  }
+}
+
+//----------------------------------------------------------------------
+// 3D Collision
+// (TODO: use to make edges dotted when occluded)
+//----------------------------------------------------------------------
+
+function vecMinus(a, b) {
+  return [
+    a[0] - b[0],
+    a[1] - b[1],
+    a[2] - b[2],
+  ];
+}
+
+function vecCross(a, b) {
+  return [
+    a[1]*b[2] - b[1]*a[2],
+    a[1]*b[3] - b[1]*a[3],
+    a[0]*b[1] - b[0]*a[1],
+  ];
+}
+
+function vecDot(a, b) {
+  return a[0]*b[0] + a[1]*b[1] + a[2]*b[2];
+}
+
+function vecScalarTriple(a, b, c) {
+  return vecDot(vecCross(a,b),c);
+}
+
+function sign(a) {
+  if (a < 0) { return -1; }
+  else if (a > 0) { return 1; }
+  return 0;
+}
+
+function intersectLineTriangle(p,q,a,b,c) {
+  const pq = vecMinus(q,p);
+  const pa = vecMinus(a,p);
+  const pb = vecMinus(b,p);
+  const pc = vecMinus(c,p);
+  const m = vecCross(pq, pc);
+  const u = vecDot(pb, m);
+  const v = -vecDot(pa, m);
+  if (sign(u) !== sign(v)) {
+    return false;
+  }
+  const w = vecScalarTriple(pq, pb, pa);
+  if (sign(u) !== sign(w)) {
+    return false;
+  }
+  return true;
+}
+
+function intersectLineQuad(p,q,a,b,c,d) {
+  return (
+    intersectLineTriangle(p,q,a,b,c) ||
+    intersectLineTriangle(p,q,a,c,d)
+  );
+}
+
 //----------------------------------------------------------------------
 // Camera Projection
 //----------------------------------------------------------------------
@@ -275,9 +350,37 @@ function line(a,b) {
   ctx.lineTo(b[0], b[1]);
 }
 
+function quad4d(a,b,c,d) {
+  quad3d(toSpace(a), toSpace(b), toSpace(c), toSpace(d));
+}
+
+function quad3d(a,b,c,d) {
+  quad2d(toPlane(a), toPlane(b), toPlane(c), toPlane(d));
+}
+
+function quad2d(a,b,c,d) {
+  quad(toScreen(a), toScreen(b), toScreen(c), toScreen(d));
+}
+
+function quad(a,b,c,d) {
+  ctx.beginPath();
+  ctx.moveTo(a[0], a[1]);
+  ctx.lineTo(b[0], b[1]);
+  ctx.lineTo(c[0], c[1]);
+  ctx.lineTo(d[0], d[1]);
+  ctx.closePath();
+  ctx.fill();
+}
+
+let cubeFill = 'rgba(0,40,70,0.04)';
 function drawCube() {
+  const v = (i) => transform(vert(i));
   for (let [i,j] of edges()) {
-    line4d(transform(vert(i)), transform(vert(j)));
+    line4d(v(i), v(j));
+  }
+  ctx.fillStyle = cubeFill;
+  for (let [i,j,k,l] of faces()) {
+    quad4d(v(i), v(j), v(k), v(l));
   }
 }
 
