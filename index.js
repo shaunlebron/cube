@@ -138,6 +138,7 @@ function* faces() {
 //----------------------------------------------------------------------
 // 3D Collision
 // (TODO: use to make edges dotted when occluded)
+// from: https://books.google.com/books?id=WGpL6Sk9qNAC&pg=PA188&lpg=PA188&dq=intersect+line+quadrilateral&source=bl&ots=PoZRjG2jkI&sig=M6Bb3gMxtTCqCsMkNsM8E2SofRE&hl=en&sa=X&ved=0ahUKEwi7woalt6LWAhVMyGMKHYfnDhsQ6AEIZDAJ#v=onepage&q=intersect%20line%20quadrilateral&f=false
 //----------------------------------------------------------------------
 
 function vecMinus(a, b) {
